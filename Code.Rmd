@@ -1,0 +1,102 @@
+---
+title: "Week 7"
+author: "Abhishek Solanki"
+date: "1/4/2021"
+output: word_document
+---
+
+```{r}
+library(tidyverse)
+library(gapminder)
+library(socviz)
+
+##Loading gss_sm data
+data("gss_sm")
+
+# Showing metadata from the gss_sm dataframe
+gss_sm 
+
+
+## using organdata, create a table of summary statistics by country called by_country (show the mean of donors, gdp, health, roads, cerebvas, and the standard deviation of donors)
+by_country <- organdata %>% group_by(consent_law, country) %>% summarize_if(is.numeric, funs(mean, sd), na.rm = TRUE) %>% ungroup()
+
+by_country <- organdata %>% group_by(consent_law, country) %>% summarize(donors_mean= mean(donors, na.rm = TRUE), donors_sd = sd(donors, na.rm = TRUE), gdp_mean = mean(gdp, na.rm = TRUE), health_mean = mean(health, na.rm = TRUE), roads_mean = mean(roads, na.rm = TRUE), cerebvas_mean = mean(cerebvas, na.rm = TRUE))
+by_country
+
+## Producing a scatterplot of the by_country data with the points colored by consent_law
+p <- ggplot(data = by_country, mapping = aes(x = donors_mean, y = reorder(country, donors_mean), color = consent_law)) 
+p + geom_point(size=3) + labs(x = "Donor Procurement Rate", y = "", color = "Consent Law") + theme(legend.position="top")
+
+##Using facet_wrap() split the consent_law variable into two panels and rank the countries by donation rate within the panels.
+
+p2 <-  ggplot(data = by_country, mapping = aes(x = donors_mean, y = reorder(country, donors_mean))) 
+
+p2 + geom_point(size=3) + facet_wrap(~ consent_law, scales = "free_y", ncol = 1) + labs(x= "Donor Procurement Rate", y= "")
+
+
+## Using geom_pointrange() to create a dot and whisker plot showing the mean of donors and a confidence interval.
+
+p3 <- ggplot(data = by_country, mapping = aes(x = reorder(country, donors_mean), y = donors_mean)) 
+p3 + geom_pointrange(mapping = aes(ymin = donors_mean - donors_sd, ymax = donors_mean + donors_sd)) + labs(x= "", y= "Donor Procurement Rate") + coord_flip()
+
+##Creating a scatterplot of roads_mean v. donors_mean with the labels identifying the country sitting to the right or left of the point.
+
+p4 <- ggplot(data = by_country, mapping = aes(x = roads_mean, y = donors_mean)) 
+p4 + geom_point() + geom_text(mapping = aes(label = country))
+
+p5 <- ggplot(data = by_country, mapping = aes(x = roads_mean, y = donors_mean)) 
+p5 + geom_point() + geom_text(mapping = aes(label = country), hjust = 0)
+
+##loading the ggrepel() library
+library(ggrepel)
+elections_historic %>% select(2:7)
+
+
+## using the elections_historic data, plot the presidents popular 
+## vote percentage v electoral college vote percentage. 
+## draw axes at 50% for each attribute and use geom_text_repel() 
+## to keep the labels from obscuring the points. 
+
+p_title <- "Presidential Elections: Popular & Electoral College Margins"
+p_subtitle <- "1824-2016" 
+p_caption <-  "Data for 2016 are provisional."
+
+x_label <- "Winner's share of Popular Vote" 
+y_label <- "Winner's share of Electoral College Votes" 
+p6 <- ggplot(elections_historic, aes(x = popular_pct, y = ec_pct, label = winner_label)) 
+p6 + geom_hline(yintercept = 0.5, size = 1.4, color = "gray80") + 
+  geom_vline(xintercept = 0.5, size = 1.4, color = "gray80") + 
+  geom_point() + 
+  geom_text_repel() + 
+  scale_x_continuous(labels = scales::percent) + 
+  scale_y_continuous(labels = scales::percent) + 
+  labs(x = x_label, y = y_label, title = p_title, subtitle = p_subtitle, caption = p_caption)
+
+
+## What is the electoral college?
+## The Electoral College is widely known as "Winner take all” system because the winner of the popular vote in each state gets all of the state’s electoral votes.
+
+## creating a new binary value column in organdata called 'ind' populated by determining whether the ccode is "Spa" or "Ita" and the year is after than 1998.
+
+organdata$ind <- organdata$ccode %in% c("Ita", "Spa") & 
+  organdata$year > 1998 
+
+p7 <- ggplot(data = organdata, 
+            mapping = aes(x = roads, 
+                          y = donors, color = ind)) 
+p7 + geom_point() + 
+  geom_text_repel(data = subset(organdata, ind), 
+                  mapping = aes(label = ccode)) + 
+  guides(label = FALSE, color = FALSE)
+
+ 
+## creating an organdata plot of Roads v. Donors and map the ind attribute to the color aesthetic. 
+## Label those points with the ccode and suppress the legends.
+
+p8 <- ggplot(data = organdata, mapping = aes(x = roads, y = donors)) 
+p8 + geom_point() + 
+  annotate(geom = "rect", xmin = 125, xmax = 155, ymin = 30, ymax = 35, fill = "red", alpha = 0.2) + 
+  annotate(geom = "text", x = 157, y = 33, label = "Spa = Spain & Ita = Italy ", hjust = 0) + 
+  guides(label = FALSE, color = FALSE) ## 10. Added a label in a rectangle to the previous plot that says 
+"Spa = Spain & Ita = Italy"
+```
